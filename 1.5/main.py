@@ -12,7 +12,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
-port = int(os.environ.get("PORT", 8000))
+port = int(os.environ.get("PORT", 3000))
 
 if __name__ == "__main__":
     print(f"Server started in port {port}", flush=True)
