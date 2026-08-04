@@ -15,3 +15,7 @@ Submissions for the University of Helsinki DevOps with Kubernetes course.
 | 1.7 | [External access with Ingress](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/1.7/1.7) |
 | 1.8 | [The project, step 5](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/1.8/1.8) |
 | 1.9 | [More services](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/1.9/1.9) |
+| 1.10 | [Even more services](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/1.10/1.10) |
+| 1.11 | [Persisting data](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/1.11/1.11) |
+| 1.12 | [The project, step 6](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/1.12/1.12) |
+| 1.13 | [The project, step 7](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/1.13/1.13) |
