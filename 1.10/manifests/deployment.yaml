@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-output
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-output
+  template:
+    metadata:
+      labels:
+        app: log-output
+    spec:
+      volumes:
+        - name: shared-log
+          emptyDir: {}
+      containers:
+        - name: log-randomizer
+          image: log-randomizer:latest
+          imagePullPolicy: Never
+          volumeMounts:
+            - name: shared-log
+              mountPath: /usr/src/app/files
+        - name: http-endpoint
+          image: http-endpoint:latest
+          imagePullPolicy: Never
+          env:
+            - name: PORT
+              value: "3001"
+          volumeMounts:
+            - name: shared-log
+              mountPath: /usr/src/app/files
