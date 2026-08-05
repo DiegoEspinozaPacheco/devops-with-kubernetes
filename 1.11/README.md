@@ -1,6 +1,6 @@
-# The Project (app convergence)
+# Log output + Ping-pong (shared PersistentVolume)
 
-This project has joined log output app that has 2 containers and ping pong app that basically generates a counter based on how many get requests are done.
+Log output (2 containers) and Ping-pong share a PersistentVolume.
 
 Both apps have a bit more of information with their own Readmes.
 
