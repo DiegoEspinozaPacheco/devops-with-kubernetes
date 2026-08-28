@@ -28,3 +28,5 @@ Submissions for the University of Helsinki DevOps with Kubernetes course.
 | 2.2 | [The project, step 8](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/2.2/2.2) |
 | 2.3 | [Keep them separated](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/2.3/2.3) |
 | 2.4 | [The project, step 9](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/2.4/2.4) |
+| 2.5 | [Documentation and ConfigMaps](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/2.5/2.5) |
+| 2.6 | [The project, step 10](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/2.6/2.6) |
