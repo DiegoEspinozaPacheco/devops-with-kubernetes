@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: wikipedia-reminder
+  namespace: project
+spec:
+  schedule: "0 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: wikipedia-reminder
+              image: wikipedia-reminder:latest
+              imagePullPolicy: Never
+              env:
+                - name: TODO_BACKEND_URL
+                  value: "http://todo-backend-svc.project.svc.cluster.local:2348/todos"
+          restartPolicy: Never
