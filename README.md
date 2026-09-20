@@ -34,3 +34,11 @@ Submissions for the University of Helsinki DevOps with Kubernetes course.
 | 2.8 | [The project, step 11](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/2.8/2.8) |
 | 2.9 | [The project, step 12](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/2.9/2.9) |
 | 2.10 | [The project, step 13](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/2.10/2.10) |
+
+## Chapter 4
+| Exercise | App | 
+|---|---|
+| 3.1 | [Pingpong GKE](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/3.1/3.1) |
+| 3.2 | [Back to Ingress](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/3.2/3.2) |
+| 3.3 | [To the Gateway](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/3.3/3.3) |
+| 3.4 | [Rewritten routing](https://github.com/DiegoEspinozaPacheco/devops-with-kubernetes/tree/3.4/3.4) |
