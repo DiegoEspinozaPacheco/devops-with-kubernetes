@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-output
+  namespace: gcp-gke
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-output
+  template:
+    metadata:
+      labels:
+        app: log-output
+    spec:
+      volumes:
+        - name: shared-log
+          emptyDir: {}
+      containers:
+        - name: log-randomizer
+          image: diegoespinozapacheco/log-randomizer-gke:latest
+          volumeMounts:
+            - name: shared-log
+              mountPath: /usr/src/app/files
+        - name: http-endpoint
+          image: diegoespinozapacheco/http-endpoint-gke:latest
+          env:
+            - name: PORT
+              value: "3001"
+          volumeMounts:
+            - name: shared-log
+              mountPath: /usr/src/app/files
