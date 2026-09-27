@@ -19,7 +19,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(str(counter).encode())
         elif self.path == "/":
-            # GKE Ingress performs a health check on "/" for *every* backend.
+            # GKE Gateway performs a health check on "/" for every backend.
             self.send_response(200)
             self.send_header("Content-type", "text/plain")
             self.end_headers()
