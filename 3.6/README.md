@@ -1,71 +1,85 @@
-# 3.5 - The project, with Kustomize
+# 3.6 - The project, with CI/CD
 
-"The project" (todo-app, todo-backend, postgres, wikipedia-reminder)
-deployed to GKE, now managed with Kustomize instead of individual
-`kubectl apply -f` commands. Namespace: `project`.
+"The project" (todo-app, todo-backend, postgres, wikipedia-reminder),
+same as 3.5, but build/push/deploy is now automated with GitHub
+Actions instead of manual commands. A push that touches anything
+under `3.6/` builds the three app images, pushes them to Google
+Artifact Registry, and deploys with Kustomize - see
+`.github/workflows/project-deploy.yaml` at the repo root.
 
-## Build (with the final Docker Hub tags, before any local test)
+## One-time GCP setup (already done for this repo, kept here for reference)
 
+Artifact Registry repository:
 ```
-docker build -t diegoespinozapacheco/todo-app-gke:latest ./todo-app
-docker build -t diegoespinozapacheco/todo-backend-gke:latest ./todo-backend
-docker build -t diegoespinozapacheco/wikipedia-reminder-gke:latest ./wikipedia-reminder
-```
-
-## Push to Docker Hub
-
-```
-docker login
-docker push diegoespinozapacheco/todo-app-gke:latest
-docker push diegoespinozapacheco/todo-backend-gke:latest
-docker push diegoespinozapacheco/wikipedia-reminder-gke:latest
+gcloud artifacts repositories create dwk-project \
+  --repository-format=docker \
+  --location=europe-north1
 ```
 
-## Local check (k3d-k3s-default, namespace project)
+Service account used by the pipeline, with just enough permissions to
+push images and manage the GKE cluster:
+```
+gcloud iam service-accounts create "github-actions-sa" \
+  --display-name="GitHub Actions SA"
 
-Kustomize rewrites the image names to the Docker Hub tags above, so
-k3d pulls the real images (no `imagePullPolicy: Never`).
+gcloud projects add-iam-policy-binding dwk-gke-dep \
+  --role="roles/artifactregistry.writer" \
+  --member="serviceAccount:github-actions-sa@dwk-gke-dep.iam.gserviceaccount.com"
 
-```
-kubectx k3d-k3s-default
-kubectl apply -k .
-```
-
-```
-kubectl rollout status statefulset/postgres-stset -n project
-kubectl rollout status deployment/todo-backend -n project
-kubectl rollout status deployment/todo-app -n project
-```
-
-```
-kubectl port-forward --address 0.0.0.0 -n project svc/todo-backend-svc 3013:2348
-kubectl port-forward --address 0.0.0.0 -n project svc/todo-app-svc 3012:2345
+gcloud projects add-iam-policy-binding dwk-gke-dep \
+  --role="roles/container.admin" \
+  --member="serviceAccount:github-actions-sa@dwk-gke-dep.iam.gserviceaccount.com"
 ```
 
+Workload Identity Federation, so GitHub Actions can authenticate to
+GCP without storing any credentials as secrets:
 ```
-curl http://localhost:3013/            # 200, health check
-curl http://localhost:3013/todos       # []
-curl -X POST http://localhost:3013/todos -H "Content-Type: application/json" -d '{"content":"test"}'
-curl http://localhost:3013/todos       # [{"content":"test"}]
-curl http://localhost:3012/            # frontend HTML
+gcloud iam workload-identity-pools create "github-pool" \
+  --location="global" \
+  --display-name="GitHub Actions Pool"
+
+gcloud iam workload-identity-pools providers create-oidc "github-provider" \
+  --location="global" \
+  --workload-identity-pool="github-pool" \
+  --display-name="GitHub provider" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
+  --attribute-condition="assertion.repository=='DiegoEspinozaPacheco/devops-with-kubernetes'" \
+  --issuer-uri="https://token.actions.githubusercontent.com"
+
+gcloud iam service-accounts add-iam-policy-binding \
+  github-actions-sa@dwk-gke-dep.iam.gserviceaccount.com \
+  --role="roles/iam.workloadIdentityUser" \
+  --member="principalSet://iam.googleapis.com/projects/428339135151/locations/global/workloadIdentityPools/github-pool/attribute.repository/DiegoEspinozaPacheco/devops-with-kubernetes"
 ```
 
-Note: locally `/` and `/todos` are on separate ports (no Gateway
-installed in k3d), so the frontend's own `fetch('/todos')` fails when
-opened in a browser against port 3012 - that's expected. The
-Gateway/HTTPRoute below is only applied on GKE.
+GitHub Environment `GKE_PROJECT`, holding 3 secrets: `GKE_PROJECT`
+(the GCP project ID), `SERVICE_ACCOUNT`
+(`github-actions-sa@dwk-gke-dep.iam.gserviceaccount.com`), and
+`WORKLOAD_IDENTITY_PROVIDER`
+(`projects/428339135151/locations/global/workloadIdentityPools/github-pool/providers/github-provider`).
 
-Trigger the reminder manually instead of waiting for the hourly
-schedule:
+## What the pipeline does (`.github/workflows/project-deploy.yaml`)
 
-```
-kubectl create job --from=cronjob/wikipedia-reminder wikipedia-reminder-manual-1 -n project
-kubectl logs -n project -l job-name=wikipedia-reminder-manual-1
-```
+On every push that touches `3.6/**`:
 
-## Create the GKE cluster and enable Gateway API
+1. Authenticates to GCP via Workload Identity Federation (no stored
+   credentials)
+2. Builds `todo-app`, `todo-backend` and `wikipedia-reminder`,
+   tagged `<registry>/<project>/<repository>/<image>:main-<commit-sha>`
+3. Pushes all three to Artifact Registry
+4. `kustomize edit set image` for each, then
+   `kustomize build . | kubectl apply -f -`
+5. Waits for `todo-app` and `todo-backend` rollouts to complete
 
-Billing starts here.
+`todo-app`'s Deployment uses `strategy: Recreate` instead of the
+default `RollingUpdate`: its PVC is `ReadWriteOnce`, so a rolling
+update would try to mount the same volume from two pods at once and
+hang. `Recreate` terminates the old pod before starting the new one.
+
+## What is still manual (not covered by the pipeline)
+
+The pipeline only manages what is inside `3.6/kustomization.yaml`.
+These are applied once, outside the pipeline:
 
 ```
 gcloud container clusters create dwk-cluster \
@@ -79,53 +93,19 @@ gcloud container clusters update dwk-cluster --location=europe-north1-b --gatewa
 ```
 
 ```
-kubectx
-```
-
-Rename the new context, e.g.:
-
-```
-kubectx gke=<generated-context-name>
-kubectx gke
-```
-
-## Deploy
-
-```
-kubectl apply -k .
+kubectl apply -f namespaces/project.yaml
 kubectl apply -f todo-app/manifests/gateway.yaml -f todo-app/manifests/route.yaml
-```
-
-```
-kubectl rollout status statefulset/postgres-stset -n project
-kubectl rollout status deployment/todo-backend -n project
-kubectl rollout status deployment/todo-app -n project
 ```
 
 ## Verify
 
 ```
-kubectl get gateway my-gateway -n project --watch
+kubectl get gateway my-gateway -n project
 ```
-
-Wait for `PROGRAMMED: True` and an `ADDRESS`. Then:
 
 ```
 curl http://<ADDRESS>/
 curl http://<ADDRESS>/todos
-curl -X POST http://<ADDRESS>/todos -H "Content-Type: application/json" -d '{"content":"from GKE"}'
-curl http://<ADDRESS>/todos
-```
-
-Open `http://<ADDRESS>/` in a browser: the frontend loads the todo
-list on its own, since `/` and `/todos` are on the same origin behind
-the Gateway.
-
-Trigger the reminder manually to confirm it also works on GKE:
-
-```
-kubectl create job --from=cronjob/wikipedia-reminder wikipedia-reminder-manual-1 -n project
-kubectl logs -n project -l job-name=wikipedia-reminder-manual-1
 ```
 
 ## Shut down (billing stops here)
@@ -134,3 +114,7 @@ kubectl logs -n project -l job-name=wikipedia-reminder-manual-1
 gcloud container clusters delete dwk-cluster --zone=europe-north1-b
 kubectx local
 ```
+
+Deleting the cluster does not affect the pipeline itself or the
+images in Artifact Registry - recreating the cluster and re-running
+the workflow (or pushing a commit) redeploys everything.
