@@ -101,7 +101,7 @@ HTML = """
 <body>
   <h1>Todo app</h1>
   <img src="/image">
-  <p>University of Helsinki</p>
+  <p>University of Helsinki - Testing CI/CD</p>
 
   <form id="todo-form">
     <input id="todo-input" type="text" maxlength="140" placeholder="New todo (max 140 characters)">
