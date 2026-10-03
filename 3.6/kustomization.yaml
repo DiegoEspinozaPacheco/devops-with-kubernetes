@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespaces/project.yaml
+  - persistent-volume/persistentvolumeclaim.yaml
+  - postgres/manifests/statefulset.yaml
+  - todo-app/manifests/configmap.yaml
+  - todo-app/manifests/deployment.yaml
+  - todo-app/manifests/service.yaml
+  - todo-backend/manifests/secret.yaml
+  - todo-backend/manifests/deployment.yaml
+  - todo-backend/manifests/service.yaml
+  - wikipedia-reminder/manifests/cronjob.yaml
+images:
+  - name: todo-app
+    newName: diegoespinozapacheco/todo-app-gke
+    newTag: latest
+  - name: todo-backend
+    newName: diegoespinozapacheco/todo-backend-gke
+    newTag: latest
+  - name: wikipedia-reminder
+    newName: diegoespinozapacheco/wikipedia-reminder-gke
+    newTag: latest
